@@ -3,7 +3,7 @@ Autotrader.co.uk data scraper.
 
 Do I get a slap on the wrist or how does this work?
 
-Please note that it's all very much work in progress. 
+While the project is mostly functional, it's poorly documented, which is what I'm focusing on at the moment.
 
 # Structure
 
