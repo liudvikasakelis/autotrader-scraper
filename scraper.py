@@ -20,7 +20,7 @@ with open(str(sys.argv[2]), mode) as o_file: # output to this
     if mode == 'wb':
         cwriter.writerow(toprow)
     for u in url_list:
-        cwriter.writerow(ff1.scrapper(u))
+        cwriter.writerow(ff1.scraper(u))
         i+=1
         if i % 10 == 0:
             print i

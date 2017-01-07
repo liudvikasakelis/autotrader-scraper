@@ -38,7 +38,7 @@ def lpat(q, pattern): # sees if list element matches regex, returns element
         if re.match(pattern, a):
             return a
 
-def scrapper(urlid):
+def scraper(urlid):
     import re, requests
     from lxml import html
     fname = str(urlid) + '.html'
