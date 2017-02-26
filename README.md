@@ -12,7 +12,6 @@ While the project is mostly functional, it's poorly documented, which is what I'
 * listmaker.py  Makes list of car IDs
 * srv.py  The (incomplete) server that should automate all the scraping. Documentation to follow 
 
-all will be explained!
 
 ### What I want from you, reader
 
