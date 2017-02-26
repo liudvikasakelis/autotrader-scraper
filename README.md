@@ -10,6 +10,7 @@ While the project is mostly functional, it's poorly documented, which is what I'
 * ff1.py    The main library, containing the scraper function + other things
 * scraper.py    Kind of a wraper for the scraper function
 * listmaker.py  Makes list of car IDs
+* srv.py  The (incomplete) server that should automate all the scraping. Documentation to follow 
 
 all will be explained!
 
