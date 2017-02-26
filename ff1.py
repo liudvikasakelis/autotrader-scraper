@@ -41,17 +41,22 @@ def lpat(q, pattern): # sees if list element matches regex, returns element
 def scraper(urlid):
     import re, requests
     from lxml import html
-    fname = str(urlid) + '.html'
+    import time
+
     fuelTypes = ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'Bi Fuel']
     bodyTypes = ['MPV', 'Convertible', 'SUV', 'Estate', 'Coupe', 'Saloon', 
                                                              'Hatchback']
     trnsTypes = ['Manual', 'Automatic', 'Semi-Automatic']
-    nl = [None]*18
+    nl = [None]*19
 
     aurl = 'http://www.autotrader.co.uk/classified/advert/'
     params = ''
     page = requests.get(aurl+str(urlid)+params) 
     tree = html.fromstring(page.content)
+     
+    if not re.search('Practicality', page.content): # ad gone 
+        nl[19] = int(time.time())  # first_gone field
+        return nl
 
     # ???
     v = tree.xpath('//link[@rel="canonical"]/@href')[0]
@@ -134,6 +139,7 @@ def scraper(urlid):
     nl[16] = re.search('(?<=type":")\w+', z).group(0) # 
     # nl[18] = re.search('(?<=postcode":")\w+', z).group(0) # postcode
     nl[17] = desc
+    nl[18] = int(time.time())
     
     return nl
 
