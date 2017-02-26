@@ -47,8 +47,10 @@ def scraper(urlid):
     bodyTypes = ['MPV', 'Convertible', 'SUV', 'Estate', 'Coupe', 'Saloon', 
                                                              'Hatchback']
     trnsTypes = ['Manual', 'Automatic', 'Semi-Automatic']
-    nl = [None]*19
-
+    nl = [None]*20
+    
+    nl[0] = urlid 
+    
     aurl = 'http://www.autotrader.co.uk/classified/advert/'
     params = ''
     page = requests.get(aurl+str(urlid)+params) 
@@ -77,7 +79,7 @@ def scraper(urlid):
     else:
         cat = None
 
-    nl[0] = urlid 
+   
     nl[1] = re.search('(?<=make=).*(?=&)', v).group(0) # make
     nl[2] = re.search('(?<=model=).*', v).group(0) # model
 

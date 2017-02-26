@@ -7,13 +7,14 @@ import pickle
 import requests
 import re
 from lxml import html
+import ff1
 
 
 def addtojlist(job):
     global jlock
     global jlist
     while jlock:
-        sleep(.1)
+        sleep(random.uniform(0.01, 0.1))
     jlock = True
     try:
         jlist.append(job)
@@ -32,34 +33,56 @@ def do_c(job):
     t_cars = t.xpath('//h1[@class="search-form__count js-results-count"]/text()')[0]
     t_cars = re.search('[0-9,]+', t_cars).group(0)
     t_cars = int(t_cars.replace(",", "")) 
-    pageno = t_cars/10 
+    pageno = t_cars/10 + 1
     while jlock:
-        sleep(.1)
+        sleep(random.uniform(0.01, 0.1))
     jlock = True
     for i in range(pageno):
         jlist.append(("b", job[1] + str(i+1)))
     jlock = False
+    print("C " + str(pageno))
     return 0
 
 def do_b(job):
     global jlock
     global jlist
+    count = 0
     page = requests.get(job[1])
     t = html.fromstring(page.content)
     v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
     while jlock:
-        sleep(.1)
+        sleep(random.uniform(0.01, 0.1))
     jlock = True
     for a in v:
         ID = re.search('(?<=classified/advert/)[0-9]+', a)
         if(ID):
             ID = int(ID.group(0))
-            jlist.append(("a", ID))    
+            jlist.append(("a", ID))
+            count += 1    
     jlock = False
+    print("B " + str(count))
     return 0
 
 def do_a(job):
-    return 1   
+    global rlock
+    global rlist    
+    result = ff1.scraper(job[1])
+    while rlock:
+        sleep(random.uniform(0.01, 0.1))
+    rlock = True 
+    rlist.append(result)
+    rlock = False
+    print("A")
+    return 0
+
+def sql_writer():
+    global STAHP
+    global rlist
+    global rlock
+    # open an sqlite3 connection    
+    while not STAHP:
+        # move things from rlist to the database
+        pass
 
 def jparse(data):
     if(data[0] == "a"):
@@ -111,10 +134,12 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
 
-jlock = False
-jlist = []
+jlock = False   # Lock to jlist
+jlist = []      # Job list
+rlock = False   # Lock to rlist 
+rlist = []      # Result list 
 HOST, PORT = "localhost", 9500
-STAHP = False
+STAHP = False   # How the main loop knows when to STAHP
 
 server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
 
@@ -127,7 +152,8 @@ server_thread = threading.Thread(target=server.serve_forever)
 server_thread.daemon = True
 server_thread.start()  
 
-while not STAHP:
+# Pay attention, this is the MAIN LOOP:
+while not STAHP:        
     sleep(random.gammavariate(1, 1))
     if(jlist):
         job = random.choice(jlist)
@@ -140,7 +166,7 @@ while not STAHP:
         
         if(status == 0):
             while jlock:
-                sleep(.1)
+                sleep(random.uniform(0.01, 0.1))
             jlock = True
             jlist.remove(job)
             jlock = False
@@ -149,9 +175,13 @@ while not STAHP:
             print(job)
             print("status: "+ str(status))
 
-if(jlist):
+# If we have unfinished jobs in jlist, that's pickled for later
+if(jlist):  
     with open(str("jlist.txt"), "wb") as fl:
         pickle.dump(jlist, fl)
+
+# Print how far we got 
+print(len(rlist))
 
 server.shutdown()
 server.server_close()
