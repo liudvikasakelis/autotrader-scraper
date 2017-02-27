@@ -182,7 +182,8 @@ server_thread = threading.Thread(target=server.serve_forever)
 # Exit the server thread when the main thread terminates
 server_thread.daemon = True
 server_thread.start()  
-
+# This thread to move things from rlist to a sqlite3 database file 
+# Always running to avoid starting a new connection for each entry
 sql_thread = threading.Thread(target=sql_writer)
 sql_thread.daemon = True
 sql_thread.start()
@@ -215,7 +216,6 @@ if(jlist):
     with open(str("jlist.txt"), "wb") as fl:
         pickle.dump(jlist, fl)
 
-# Print how far we got 
 print(len(rlist))
 
 server.shutdown()
