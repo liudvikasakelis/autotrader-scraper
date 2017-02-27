@@ -107,10 +107,7 @@ def combine_lines(olds, newline):
     final = newline
     for old in olds:
         for i in range(len(old)-1):
-            if((type(final[i]) == str) or (type(old[i]) == str)):
-                final[i] = max(final[i], old[i], key = len)  
-            else:
-                final[i] = max(final[i], old[i])
+            final[i] = max(final[i], old[i])  
         if not final[-1]:
             final[-1] = old[-1]
         elif old[-1]:
