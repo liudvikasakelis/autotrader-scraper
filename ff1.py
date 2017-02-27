@@ -69,7 +69,7 @@ def scraper(urlid):
     # utag_data
     z = tree.xpath('//script[contains(.,"vehicle_price")]/text()') 
     # full desc    
-    desc = tree.xpath('//section[@class="fpaDescription"]/text()') 
+    desc = tree.xpath('//section[@class="fpaDescription"]/text()')[0] 
     # just the good bits    
     z = re.search('(?<=utag_data = {).*(?=})', z[0]).group(0) 
     cat = tree.xpath('//a[@class="tracking-motoring-products-link"]/@href')[0]
