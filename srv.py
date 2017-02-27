@@ -8,6 +8,7 @@ import requests
 import re
 from lxml import html
 import ff1
+import sqlite3
 
 
 def addtojlist(job):
@@ -79,10 +80,43 @@ def sql_writer():
     global STAHP
     global rlist
     global rlock
-    # open an sqlite3 connection    
-    while not STAHP:
-        # move things from rlist to the database
-        pass
+    with sqlite3.connect("test.db") as conn:    
+        c = conn.cursor()
+        while not STAHP:
+            if(rlist):
+                job = rlist[0]
+                c.execute("SELECT * FROM cars WHERE url=?", [job[0]])
+                match = c.fetchall()
+                if(match):
+                    final = combine_lines(match, job)
+                else:
+                    final = job
+                c.execute("DELETE FROM cars WHERE url=?", [job[0]])
+                c.execute("INSERT INTO cars VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                          final)
+                conn.commit()
+                while rlock:
+                    sleep(random.uniform(0.01, 0.1))
+                rlock = True 
+                rlist.remove(job)
+                rlock = False
+            sleep(0.1)
+
+
+def combine_lines(olds, newline):
+    final = newline
+    for old in olds:
+        for i in range(len(old)-1):
+            if((type(final[i]) == str) or (type(old[i]) == str)):
+                final[i] = max(final[i], old[i], key = len)  
+            else:
+                final[i] = max(final[i], old[i])
+        if not final[-1]:
+            final[-1] = old[-1]
+        elif old[-1]:
+            final[-1] = min(final[-1], old[-1])
+    return final 
+                
 
 def jparse(data):
     if(data[0] == "a"):
@@ -151,6 +185,10 @@ server_thread = threading.Thread(target=server.serve_forever)
 # Exit the server thread when the main thread terminates
 server_thread.daemon = True
 server_thread.start()  
+
+sql_thread = threading.Thread(target=sql_writer)
+sql_thread.daemon = True
+sql_thread.start()
 
 # Pay attention, this is the MAIN LOOP:
 while not STAHP:        
