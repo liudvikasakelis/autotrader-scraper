@@ -10,57 +10,63 @@ from lxml import html
 import ff1
 import sqlite3
 
-
-def addtojlist(job):
+def add_jlist(job):
     global jlock
     global jlist
     while jlock:
         sleep(random.uniform(0.01, 0.1))
     jlock = True
-    try:
-        jlist.append(job)
-        jlock = False
-        return 0
-    except:
-        jlock = False
-        return 1
+    jlist.append(job)
+    jlock = False
+    return 0
+
+def add_rlist(result):
+    global rlist
+    global rlock
+    while rlock:
+        sleep(random.uniform(0.01, 0.1))
+    rlock = True
+    rlist.append(result)
+    rlock = False
+    return 0
       
 def do_c(job):
-    global jlock    
-    global jlist
     page = requests.get(job[1]+"1") 
+    if(str(page)=='<Response [204]>'): # Network stuff
+        sleep(120)        
+        return 1
+    
     t = html.fromstring(page.content) 
     v = t.xpath('//div[@class="search-result__r1"]/div/a/@href') 
     t_cars = t.xpath('//h1[@class="search-form__count js-results-count"]/text()')[0]
     t_cars = re.search('[0-9,]+', t_cars).group(0)
     t_cars = int(t_cars.replace(",", "")) 
     pageno = t_cars/10 + 1
-    while jlock:
-        sleep(random.uniform(0.01, 0.1))
-    jlock = True
+
     for i in range(pageno):
-        jlist.append(("b", job[1] + str(i+1)))
-    jlock = False
+        add_jlist(("b", job[1] + str(i+1))) # c jobs produce b jobs
+
     print("C " + str(pageno))
     return 0
 
 def do_b(job):
-    global jlock
-    global jlist
     count = 0
     page = requests.get(job[1])
+    
+    if(str(page)=='<Response [204]>'): # Network stuff
+        sleep(120)        
+        return 1
+
     t = html.fromstring(page.content)
     v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-    while jlock:
-        sleep(random.uniform(0.01, 0.1))
-    jlock = True
+
     for a in v:
         ID = re.search('(?<=classified/advert/)[0-9]+', a)
         if(ID):
             ID = int(ID.group(0))
-            jlist.append(("a", ID))
+            add_jlist(("a", ID)) # b jobs produce a jobs
             count += 1    
-    jlock = False
+
     print("B " + str(count))
     return 0
 
@@ -68,6 +74,12 @@ def do_a(job):
     global rlock
     global rlist    
     result = ff1.scraper(job[1])
+
+    if(result[1] == 'AUTOTRADER_FAILED'):
+        print("Server failed")
+        sleep(60)
+        return(1)
+
     while rlock:
         sleep(random.uniform(0.01, 0.1))
     rlock = True 
@@ -80,40 +92,47 @@ def sql_writer():
     global STAHP
     global rlist
     global rlock
-    with sqlite3.connect("test.db") as conn:    
+    with sqlite3.connect('test.db') as conn:    
         c = conn.cursor()
         while not STAHP:
-            if(rlist):
+            while(rlist):
                 job = rlist[0]
                 c.execute("SELECT * FROM cars WHERE url=?", [job[0]])
-                match = c.fetchall()
+                match = list(c.fetchall())
                 if(match):
                     final = combine_lines(match, job)
                 else:
                     final = job
                 c.execute("DELETE FROM cars WHERE url=?", [job[0]])
-                c.execute("INSERT INTO cars VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                          final)
-                conn.commit()
+                c.execute('INSERT INTO cars VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?'
+                          ',?,?,?,?,?,?)', final)
                 while rlock:
                     sleep(random.uniform(0.01, 0.1))
                 rlock = True 
                 rlist.remove(job)
                 rlock = False
-            sleep(0.1)
+            conn.commit()
+            sleep(5)
 
 
+# This combines lines (one line in newline, multiple in olds)
 def combine_lines(olds, newline):
-    final = newline
+    final = newline 
     for old in olds:
-        for i in range(len(old)-1):
-            final[i] = max(final[i], old[i])  
-        if not final[-1]:
-            final[-1] = old[-1]
-        elif old[-1]:
-            final[-1] = min(final[-1], old[-1])
+        final = combine_two(final, old)
     return final 
-                
+
+# The bigger entries are kept for each field
+# except for the last field, in which the smallest non-None entry is kept
+def combine_two(newline, oldline):
+    final = newline
+    for i in range(len(final)-1):
+        final[i] = max(final[i], oldline[i])  
+    if not final[-1]:
+        final[-1] = oldline[-1]
+    elif oldline[-1]:
+        final[-1] = min(final[-1], oldline[-1])
+    return final 
 
 def jparse(data):
     if(data[0] == "a"):
@@ -150,7 +169,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
             return 0
         job = jparse(data)
         if job:
-            status = addtojlist(job)
+            status = add_jlist(job)
             if(status == 0):
                 self.request.sendall("added")
             else:
@@ -182,6 +201,7 @@ server_thread = threading.Thread(target=server.serve_forever)
 # Exit the server thread when the main thread terminates
 server_thread.daemon = True
 server_thread.start()  
+
 # This thread to move things from rlist to a sqlite3 database file 
 # Always running to avoid starting a new connection for each entry
 sql_thread = threading.Thread(target=sql_writer)
@@ -212,6 +232,7 @@ while not STAHP:
             print("status: "+ str(status))
 
 # If we have unfinished jobs in jlist, that's pickled for later
+# surely SOMEONE should import them at startup then
 if(jlist):  
     with open(str("jlist.txt"), "wb") as fl:
         pickle.dump(jlist, fl)

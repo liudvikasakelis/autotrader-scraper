@@ -53,7 +53,17 @@ def scraper(urlid):
     
     aurl = 'http://www.autotrader.co.uk/classified/advert/'
     params = ''
-    page = requests.get(aurl+str(urlid)+params) 
+    
+    try:
+        page = requests.get(aurl+str(urlid)+params) 
+    except:
+        nl[1] = "AUTOTRADER_FAILED"
+        return nl
+    
+    if(str(page)=='<Response [204]>'):
+        nl[1] = "AUTOTRADER_FAILED"
+        return nl
+
     tree = html.fromstring(page.content)
      
     if not re.search('Practicality', page.content): # ad gone 
