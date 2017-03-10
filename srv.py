@@ -94,6 +94,28 @@ def sql_writer():
     global rlock
     with sqlite3.connect('test.db') as conn:    
         c = conn.cursor()
+        c.execute('CREATE TABLE IF NOT EXISTS cars ('
+        'url INTEGER PRIMARY KEY,'
+        ' make TEXT,'
+        ' model TEXT,'
+        ' engine_size NUM,'
+        ' year INT,'
+        ' body_type TEXT,'
+        ' mileage NUM,'
+        ' transmission TEXT,'
+        ' fuel TEXT,'
+        ' co2_emissions NUM,'
+        ' doors INT,'
+        ' seats INT,'
+        ' category TEXT,'
+        ' engine_power NUM,'
+        ' drive_train TEXT,'
+        ' price NUM,'
+        ' seller TEXT,'
+        ' full_desc TEXT,'
+        ' last_seen NUM,'
+        ' first_gone NUM);')
+
         while not STAHP:
             while(rlist):
                 job = rlist[0]
