@@ -1,42 +1,18 @@
 # functions
 import re
-def annTax(co2):
-    if(co2 <= 100):
-        return 0
-    if(co2 <= 110):
-        return 20  
-    if(co2 <= 120):
-        return 30
-    if(co2 <= 130):
-        return 110
-    if(co2 <= 140):
-        return 130
-    if(co2 <= 150):
-        return 145
-    if(co2 <= 165):
-        return 185
-    if(co2 <= 175):
-        return 210
-    if(co2 <= 185):
-        return 230
-    if(co2 <= 200):
-        return 270
-    if(co2 <= 225):
-        return 295
-    if(co2 <= 255):
-        return 500
-    if(co2 > 255):
-        return 515
+
 
 def fipa(q, param): # matches param to list entries, returns entry after match
     for a in range(len(q)):
         if q[a] == param :
             return q[a+1]
 
+
 def lpat(q, pattern): # sees if list element matches regex, returns element
     for a in q:
         if re.match(pattern, a):
             return a
+
 
 def scraper(urlid):
     import re, requests
@@ -88,7 +64,6 @@ def scraper(urlid):
         cat = re.search('(?<=category=)\w', cat).group(0)
     else:
         cat = None
-
    
     nl[1] = re.search('(?<=make=).*(?=&)', v).group(0) # make
     nl[2] = re.search('(?<=model=).*', v).group(0) # model
