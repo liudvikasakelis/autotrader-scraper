@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import socket
 
 
@@ -6,9 +8,10 @@ def client(HOST, PORT, message):
         raise ValueError('message of length 0')
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((HOST, PORT))
-    sock.sendall(str(message))
+    message = bytes(str(message), 'UTF-8')
+    sock.sendall(message)
     reply = sock.recv(1024)
-    print("server says: " + reply)
+    print("server says: " + reply.decode('UTF-8'))
     sock.shutdown(0)
     sock.close()
 

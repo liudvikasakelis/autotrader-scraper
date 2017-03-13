@@ -1,4 +1,5 @@
-# functions
+#!/usr/bin/python3
+
 import re
 import requests
 from lxml import html
@@ -40,14 +41,13 @@ def scraper(urlid):
         nl[1] = "AUTOTRADER_FAILED"
         return nl
 
-    # TODO: would be better to check page.status == 204
-    if str(page) == '<Response [204]>':
+    if page.status_code == 204:
         nl[1] = "AUTOTRADER_FAILED"
         return nl
 
     tree = html.fromstring(page.content)
 
-    if not re.search('Practicality', page.content):  # ad gone
+    if not re.search('Practicality', page.content.decode('UTF-8')):  # ad gone
         nl[19] = int(time.time())  # first_gone field
         return nl
 

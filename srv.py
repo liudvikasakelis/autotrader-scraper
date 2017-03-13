@@ -1,6 +1,8 @@
+#!/usr/bin/python3
+
 import socket
 import threading
-import SocketServer
+import socketserver
 from time import sleep
 import random
 import pickle
@@ -35,7 +37,7 @@ def add_rlist(result):
 
 def do_c(job):
     page = requests.get(job[1] + "1")
-    if str(page) == '<Response [204]>':  # Network stuff
+    if page.status_code == 204:  # Network stuff
         sleep(120)
         return 1
 
@@ -46,7 +48,7 @@ def do_c(job):
     )[0]
     t_cars = re.search('[0-9,]+', t_cars).group(0)
     t_cars = int(t_cars.replace(",", ""))
-    pageno = t_cars / 10 + 1
+    pageno = t_cars // 10 + 1
 
     for i in range(pageno):
         add_jlist(("b", job[1] + str(i + 1)))  # c jobs produce b jobs
@@ -59,8 +61,7 @@ def do_b(job):
     count = 0
     page = requests.get(job[1])
 
-    # FIXME: page.status == 204
-    if(str(page) == '<Response [204]>'):  # Network stuff
+    if page.status_code == 204:  # Network stuff
         sleep(120)
         return 1
 
@@ -192,14 +193,14 @@ def jparse(data):
         return 0
 
 
-class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         global STAHP
-        data = self.request.recv(1024)
+        data = self.request.recv(1024).decode('UTF-8')
         if(data == 'shutdown'):
             STAHP = True
-            self.request.sendall("shutting down")
+            self.request.sendall(b'shutting down')
             while(self.request.recv(1024)):
                 pass
             return 0
@@ -207,17 +208,17 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
         if job:
             status = add_jlist(job)
             if(status == 0):
-                self.request.sendall("added")
+                self.request.sendall(b'added')
             else:
-                self.request.sendall("failed to add (%s)" % (status))
+                self.request.sendall(bytes('failed to add (%s)' % (status), 'UTF-8'))
         else:
-            self.request.sendall("not a correct command")
+            self.request.sendall(b'not a correct command')
         while(self.request.recv(1024)):
             pass
         print("*")
 
 
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 
