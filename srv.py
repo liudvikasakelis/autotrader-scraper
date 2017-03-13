@@ -161,12 +161,23 @@ def combine_lines(olds, newline):
 def combine_two(newline, oldline):
     final = newline
     for i in range(len(final) - 1):
-        final[i] = max(final[i], oldline[i])
+        final[i] = my_max(final[i], oldline[i])
     if not final[-1]:
         final[-1] = oldline[-1]
     elif oldline[-1]:
         final[-1] = min(final[-1], oldline[-1])
     return final
+
+
+def my_max(one, two):
+    if not one:
+        return two
+    if not two:
+        return one
+    if type(one) is str or type(two) is str:
+        return(max(str(one), str(two)))
+    else:
+        return(max(one, two))
 
 
 def jparse(data):
