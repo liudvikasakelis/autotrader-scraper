@@ -1,20 +1,16 @@
 # autotrader-scraper
-Autotrader.co.uk data scraper. 
+Autotrader.co.uk data scraper.
 
-Do I get a slap on the wrist or how does this work?
+Exports to a sqlite3 database and keeps it really tidy.
 
-While the project is mostly functional, it's poorly documented, which is what I'm focusing on at the moment.
+Just moved to python3, so bugs should be expected. More documentation on the way
 
 # Structure
 
 * ff1.py    The main library, containing the scraper function + other things
-* scraper.py    Kind of a wraper for the scraper function
-* listmaker.py  Makes list of car IDs
-* srv.py  The (incomplete) server that should automate all the scraping. Documentation to follow 
-
-
-### What I want from you, reader
-
-* Triangulation. Here's my idea: we query the same car page from 3 different postcodes, get the distances, then triangulate. Help me out here!
+* scraper.py    Kind of a wraper for the scraper function DEPRECATED
+* listmaker.py  Makes list of car IDs DEPRECATED 
+* srv.py  The main server. Run the file with python3, communicate with using client.py. 
+* client.py Client library. Import to python3, run client.add_query(postcode, radius, min_price, max_price) to add jobs to server job queue and watch them appear in the database. Shutdown server with client.shutdown()
 
 
