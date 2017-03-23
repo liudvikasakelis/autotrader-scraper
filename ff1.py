@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# works, but could use some cleanup (scraper function esp)
 
 import re
 import requests
@@ -7,7 +8,7 @@ import time
 
 
 def fipa(q, param):
-    """matches param to list entries, returns entry after match"""
+    """matches param to list entries, returns next entry after match"""
     for a in range(len(q)):
         if q[a] == param:
             return q[a + 1]
