@@ -3,7 +3,7 @@
 import socket
 import threading
 import socketserver
-from time import sleep
+import time
 import random
 import pickle
 import requests
@@ -11,6 +11,8 @@ import re
 from lxml import html
 import ff1
 import sqlite3
+
+sleep = time.sleep
 
 
 def add_jlist(job):
@@ -57,6 +59,33 @@ def do_c(job):
     return 0
 
 
+def updater():
+    global jlist, jlock
+    with sqlite3.connect('test.db') as conn:
+        c = conn.cursor()
+        now = int(time.time())
+        cutoff = now - 60 * 60 * 24
+        c.execute('SELECT url FROM cars WHERE last_seen < ?'
+                  'AND first_gone IS NULL', [cutoff])
+        alist = c.fetchall()
+
+    # how this next line works is beyond me
+    from_database = [item for sublist in alist for item in sublist]
+    from_jlist = []
+    clist = jlist
+
+    for i in clist:
+        if i[0] == 'a':
+            from_jlist.append(i[1])
+
+    to_add = list(set(from_database) - set(from_jlist))
+
+    for i in to_add:
+        add_jlist(['a', i])
+
+    return len(to_add)
+
+
 def do_b(job):
     count = 0
     page = requests.get(job[1])
@@ -80,8 +109,6 @@ def do_b(job):
 
 
 def do_a(job):
-    global rlock
-    global rlist
     result = ff1.scraper(job[1])
 
     if result[1] == 'AUTOTRADER_FAILED':
@@ -89,11 +116,7 @@ def do_a(job):
         sleep(60)
         return 1
 
-    while rlock:
-        sleep(random.uniform(0.01, 0.1))
-    rlock = True
-    rlist.append(result)
-    rlock = False
+    add_rlist(result)
     print("A")
     return 0
 
@@ -215,13 +238,20 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             while(self.request.recv(1024)):
                 pass
             return 0
+        if data == 'updater':
+            print('U' + updater())
+            self.request.sendall(b'updatr')
+            while(self.request.recv(1024)):
+                pass
+            return 0
         job = jparse(data)
         if job:
             status = add_jlist(job)
             if(status == 0):
                 self.request.sendall(b'added')
             else:
-                self.request.sendall(bytes('failed to add (%s)' % (status), 'UTF-8'))
+                self.request.sendall(bytes('failed to add (%s)' % (status),
+                                           'UTF-8'))
         else:
             self.request.sendall(b'not a correct command')
         while(self.request.recv(1024)):
@@ -259,7 +289,7 @@ sql_thread.start()
 
 # Pay attention, this is the MAIN LOOP:
 while not STAHP:
-    sleep(random.gammavariate(1, 1))
+    sleep(random.gammavariate(.1, 1))
     if(jlist):
         job = random.choice(jlist)
         if(job[0] == "a"):
