@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# running fine
 
 import socket
 
@@ -34,6 +33,10 @@ def multiple_queries(postcode, radius, price_from, price_to):
     while price_from < price_to:
         add_query(postcode, radius, price_from, price_from + 500)
         price_from = price_from + 500
+
+
+def update():
+    client('localhost', 9500, 'updater')
 
 
 def shutdown():
