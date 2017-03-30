@@ -102,6 +102,7 @@ def do_b(job):
         if ID:
             ID = int(ID.group(0))
             add_jlist(("a", ID))  # b jobs produce a jobs
+            add_rlist([ID] + [None] * 18 + [int(time.time())])
             count += 1
 
     print("B " + str(count))
@@ -239,7 +240,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
                 pass
             return 0
         if data == 'updater':
-            print('U' + updater())
+            print('U ' + str(updater()))
             self.request.sendall(b'updatr')
             while(self.request.recv(1024)):
                 pass
