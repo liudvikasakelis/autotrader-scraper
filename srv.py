@@ -12,8 +12,6 @@ from lxml import html
 import ff1
 import sqlite3
 
-sleep = time.sleep
-
 
 def sql_writer():
     global STAHP
@@ -57,13 +55,13 @@ def sql_writer():
                     ',?,?,?,?,?,?)', final)
                 rlist.remove(job)
             conn.commit()
-            sleep(5)
+            time.sleep(5)
 
 
 def do_c(job):
     page = requests.get(job[1] + "1")
     if page.status_code == 204:  # Network stuff
-        sleep(120)
+        time.sleep(120)
         return 1
 
     t = html.fromstring(page.content)
@@ -114,7 +112,7 @@ def do_b(job):
     page = requests.get(job[1])
 
     if page.status_code == 204:  # Network stuff
-        sleep(120)
+        time.sleep(120)
         return 1
 
     t = html.fromstring(page.content)
@@ -137,7 +135,7 @@ def do_a(job):
 
     if result[1] == 'AUTOTRADER_FAILED':
         print("Server failed")
-        sleep(60)
+        time.sleep(60)
         return 1
 
     rlist.append(result)
@@ -258,7 +256,7 @@ sql_thread.start()
 
 # Pay attention, this is the MAIN LOOP:
 while not STAHP:
-    sleep(random.gammavariate(.1, 1))
+    time.sleep(random.gammavariate(.1, 1))
     if(jlist):
         job = random.choice(jlist)
         if(job[0] == "a"):
