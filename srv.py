@@ -15,28 +15,6 @@ import sqlite3
 sleep = time.sleep
 
 
-def add_jlist(job):
-    global jlock
-    global jlist
-    while jlock:
-        sleep(random.uniform(0.01, 0.1))
-    jlock = True
-    jlist.append(job)
-    jlock = False
-    return 0
-
-
-def add_rlist(result):
-    global rlist
-    global rlock
-    while rlock:
-        sleep(random.uniform(0.01, 0.1))
-    rlock = True
-    rlist.append(result)
-    rlock = False
-    return 0
-
-
 def do_c(job):
     page = requests.get(job[1] + "1")
     if page.status_code == 204:  # Network stuff
@@ -102,7 +80,7 @@ def do_b(job):
         if ID:
             ID = int(ID.group(0))
             add_jlist(("a", ID))  # b jobs produce a jobs
-            add_rlist([ID] + [None] * 18 + [int(time.time())])
+            add_rlist([ID] + [None] * 17 + [int(time.time())] + [None])
             count += 1
 
     print("B " + str(count))
@@ -314,6 +292,7 @@ while not STAHP:
 # If we have unfinished jobs in jlist, that's pickled for later
 # surely SOMEONE should import them at startup then
 if(jlist):
+    print('unfinished jobs in jlist', len(jlist))
     with open(str("jlist.txt"), "wb") as fl:
         pickle.dump(jlist, fl)
 
