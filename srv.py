@@ -15,95 +15,9 @@ import sqlite3
 sleep = time.sleep
 
 
-def do_c(job):
-    page = requests.get(job[1] + "1")
-    if page.status_code == 204:  # Network stuff
-        sleep(120)
-        return 1
-
-    t = html.fromstring(page.content)
-    t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-    t_cars = t.xpath(
-        '//h1[@class="search-form__count js-results-count"]/text()'
-    )[0]
-    t_cars = re.search('[0-9,]+', t_cars).group(0)
-    t_cars = int(t_cars.replace(",", ""))
-    pageno = t_cars // 10 + 1
-
-    for i in range(pageno):
-        add_jlist(("b", job[1] + str(i + 1)))  # c jobs produce b jobs
-
-    print("C " + str(pageno))
-    return 0
-
-
-def updater():
-    global jlist, jlock
-    with sqlite3.connect('test.db') as conn:
-        c = conn.cursor()
-        now = int(time.time())
-        cutoff = now - 60 * 60 * 24
-        c.execute('SELECT url FROM cars WHERE last_seen < ?'
-                  'AND first_gone IS NULL', [cutoff])
-        alist = c.fetchall()
-
-    # how this next line works is beyond me
-    from_database = [item for sublist in alist for item in sublist]
-    from_jlist = []
-    clist = jlist
-
-    for i in clist:
-        if i[0] == 'a':
-            from_jlist.append(i[1])
-
-    to_add = list(set(from_database) - set(from_jlist))
-
-    for i in to_add:
-        add_jlist(['a', i])
-
-    return len(to_add)
-
-
-def do_b(job):
-    count = 0
-    page = requests.get(job[1])
-
-    if page.status_code == 204:  # Network stuff
-        sleep(120)
-        return 1
-
-    t = html.fromstring(page.content)
-    v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-
-    for a in v:
-        ID = re.search('(?<=classified/advert/)[0-9]+', a)
-        if ID:
-            ID = int(ID.group(0))
-            add_jlist(("a", ID))  # b jobs produce a jobs
-            add_rlist([ID] + [None] * 17 + [int(time.time())] + [None])
-            count += 1
-
-    print("B " + str(count))
-    return 0
-
-
-def do_a(job):
-    result = ff1.scraper(job[1])
-
-    if result[1] == 'AUTOTRADER_FAILED':
-        print("Server failed")
-        sleep(60)
-        return 1
-
-    add_rlist(result)
-    print("A")
-    return 0
-
-
 def sql_writer():
     global STAHP
     global rlist
-    global rlock
     with sqlite3.connect('test.db') as conn:
         c = conn.cursor()
         c.execute('CREATE TABLE IF NOT EXISTS cars ('
@@ -141,26 +55,107 @@ def sql_writer():
                 c.execute(
                     'INSERT INTO cars VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?'
                     ',?,?,?,?,?,?)', final)
-                while rlock:
-                    sleep(random.uniform(0.01, 0.1))
-                rlock = True
                 rlist.remove(job)
-                rlock = False
             conn.commit()
             sleep(5)
 
 
-# This combines lines (one line in newline, multiple in olds)
+def do_c(job):
+    page = requests.get(job[1] + "1")
+    if page.status_code == 204:  # Network stuff
+        sleep(120)
+        return 1
+
+    t = html.fromstring(page.content)
+    t.xpath('//div[@class="search-result__r1"]/div/a/@href')
+    t_cars = t.xpath(
+        '//h1[@class="search-form__count js-results-count"]/text()'
+    )[0]
+    t_cars = re.search('[0-9,]+', t_cars).group(0)
+    t_cars = int(t_cars.replace(",", ""))
+    pageno = t_cars // 10 + 1
+
+    for i in range(pageno):
+        jlist.append(("b", job[1] + str(i + 1)))  # c jobs produce b jobs
+
+    print("C " + str(pageno))
+    return 0
+
+
+def updater():
+    global jlist
+    with sqlite3.connect('test.db') as conn:
+        c = conn.cursor()
+        now = int(time.time())
+        cutoff = now - 60 * 60 * 24
+        c.execute('SELECT url FROM cars WHERE last_seen < ?'
+                  'AND first_gone IS NULL', [cutoff])
+        alist = c.fetchall()
+
+    # how this next line works is beyond me
+    from_database = [item for sublist in alist for item in sublist]
+    from_jlist = []
+    clist = jlist
+
+    for i in clist:
+        if i[0] == 'a':
+            from_jlist.append(i[1])
+
+    to_add = list(set(from_database) - set(from_jlist))
+
+    for i in to_add:
+        jlist.append(['a', i])
+
+    return len(to_add)
+
+
+def do_b(job):
+    count = 0
+    page = requests.get(job[1])
+
+    if page.status_code == 204:  # Network stuff
+        sleep(120)
+        return 1
+
+    t = html.fromstring(page.content)
+    v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
+
+    for a in v:
+        ID = re.search('(?<=classified/advert/)[0-9]+', a)
+        if ID:
+            ID = int(ID.group(0))
+            jlist.append(("a", ID))  # b jobs produce a jobs
+            rlist.append([ID] + [None] * 17 + [int(time.time())] + [None])
+            count += 1
+
+    print("B " + str(count))
+    return 0
+
+
+def do_a(job):
+    result = ff1.scraper(job[1])
+
+    if result[1] == 'AUTOTRADER_FAILED':
+        print("Server failed")
+        sleep(60)
+        return 1
+
+    rlist.append(result)
+    print("A")
+    return 0
+
+
 def combine_lines(olds, newline):
+    """This combines lines (one line in newline, multiple in olds)"""
     final = newline
     for old in olds:
         final = combine_two(final, old)
     return final
 
 
-# The bigger entries are kept for each field
-# except for the last field, in which the smallest non-None entry is kept
 def combine_two(newline, oldline):
+    """ The bigger entries are kept for each field, except """
+    """ for the last field, in which the smallest non-None entry is kept"""
     final = newline
     for i in range(len(final) - 1):
         final[i] = my_max(final[i], oldline[i])
@@ -225,12 +220,8 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             return 0
         job = jparse(data)
         if job:
-            status = add_jlist(job)
-            if(status == 0):
-                self.request.sendall(b'added')
-            else:
-                self.request.sendall(bytes('failed to add (%s)' % (status),
-                                           'UTF-8'))
+            jlist.append(job)
+            self.request.sendall(b'added')
         else:
             self.request.sendall(b'not a correct command')
         while(self.request.recv(1024)):
@@ -242,9 +233,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 
-jlock = False   # Lock to jlist
 jlist = []      # Job list
-rlock = False   # Lock to rlist
 rlist = []      # Result list
 HOST, PORT = "localhost", 9500
 STAHP = False   # How the main loop knows when to STAHP
@@ -256,6 +245,7 @@ ip, port = server.server_address
 # Start a thread with the server -- that thread will then start one
 # more thread for each request
 server_thread = threading.Thread(target=server.serve_forever)
+
 # Exit the server thread when the main thread terminates
 server_thread.daemon = True
 server_thread.start()
@@ -279,11 +269,7 @@ while not STAHP:
             status = do_c(job)
 
         if(status == 0):
-            while jlock:
-                sleep(random.uniform(0.01, 0.1))
-            jlock = True
             jlist.remove(job)
-            jlock = False
         else:
             print("job failed:")
             print(job)
