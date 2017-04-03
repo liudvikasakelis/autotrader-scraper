@@ -59,6 +59,9 @@ def sql_writer():
             time.sleep(5)
 
 
+# def do_job(job):
+
+
 def do_a(job):
     result = ff1.scraper(job[1])
 
@@ -180,11 +183,7 @@ def jparse(data):
     if(data[0] == "a"):
         ret = [None] * 2
         ret[0] = "a"
-        try:
-            ret[1] = int(data[1:])
-        # FIXME: Undefined exception
-        except Exception:
-            return 0
+        ret[1] = int(data[1:])
         return ret
     elif(data[0] == "b"):
         ret = [None] * 2
