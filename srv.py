@@ -15,8 +15,6 @@ import sqlite3
 
 
 def sql_writer():
-    global STAHP
-    global rlist
     with sqlite3.connect('test.db') as conn:
         c = conn.cursor()
         c.execute('CREATE TABLE IF NOT EXISTS cars ('
@@ -42,8 +40,8 @@ def sql_writer():
                   ' first_gone NUM);')
 
         while not STAHP:
-            while(rlist):
-                job = rlist[0]
+            while(r_list):
+                job = r_list[0]
                 c.execute("SELECT * FROM cars WHERE url=?", [job[0]])
                 match = list(c.fetchall())
                 if(match):
@@ -54,12 +52,21 @@ def sql_writer():
                 c.execute(
                     'INSERT INTO cars VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?'
                     ',?,?,?,?,?,?)', final)
-                rlist.remove(job)
+                r_list.remove(job)
             conn.commit()
             time.sleep(5)
 
 
-# def do_job(job):
+def do_job(job):
+    if job[0] == 'a':
+        status = do_a(job)
+    elif job[0] == 'b':
+        status = do_b(job)
+    elif job[0] == 'c':
+        status = do_c(job)
+    else:
+        status = 4
+    return status
 
 
 def do_a(job):
@@ -70,7 +77,7 @@ def do_a(job):
         time.sleep(60)
         return 1
 
-    rlist.append(result)
+    r_list.append(result)
     print("A")
     return 0
 
@@ -80,7 +87,6 @@ def do_b(job):
     page = requests.get(job[1])
 
     if page.status_code == 204:  # Network stuff
-        time.sleep(120)
         return 1
 
     t = html.fromstring(page.content)
@@ -90,8 +96,8 @@ def do_b(job):
         ID = re.search('(?<=classified/advert/)[0-9]+', a)
         if ID:
             ID = int(ID.group(0))
-            jlist.append(("a", ID))  # b jobs produce a jobs
-            rlist.append([ID] + [None] * 17 + [int(time.time())] + [None])
+            a_list.append(("a", ID))  # b jobs produce a jobs
+            r_list.append([ID] + [None] * 17 + [int(time.time())] + [None])
             count += 1
 
     print("B " + str(count))
@@ -114,14 +120,13 @@ def do_c(job):
     pageno = t_cars // 10 + 1
 
     for i in range(pageno):
-        jlist.append(("b", job[1] + str(i + 1)))  # c jobs produce b jobs
+        bc_list.append(("b", job[1] + str(i + 1)))  # c jobs produce b jobs
 
     print("C " + str(pageno))
     return 0
 
 
 def updater():
-    global jlist
     with sqlite3.connect('test.db') as conn:
         c = conn.cursor()
         now = int(time.time())
@@ -133,7 +138,7 @@ def updater():
     # how this next line works is beyond me
     from_database = [item for sublist in alist for item in sublist]
     from_jlist = []
-    clist = jlist
+    clist = a_list
 
     for i in clist:
         if i[0] == 'a':
@@ -142,7 +147,7 @@ def updater():
     to_add = list(set(from_database) - set(from_jlist))
 
     for i in to_add:
-        jlist.append(['a', i])
+        a_list.append(['a', i])
 
     return len(to_add)
 
@@ -200,9 +205,7 @@ def jparse(data):
 
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
-
     def handle(self):
-        global STAHP
         data = self.request.recv(1024).decode('UTF-8')
         if(data == 'shutdown'):
             STAHP = True
@@ -218,7 +221,10 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             return 0
         job = jparse(data)
         if job:
-            jlist.append(job)
+            if job[0] == a:
+                a_list.append(job)
+            else:
+                bc_list.append(job)
             self.request.sendall(b'added')
         else:
             self.request.sendall(b'not a correct command')
@@ -248,7 +254,7 @@ server_thread = threading.Thread(target=server.serve_forever)
 server_thread.daemon = True
 server_thread.start()
 
-# This thread to move things from rlist to a sqlite3 database file
+# This thread to move things from r_list to a sqlite3 database file
 # Always running to avoid starting a new connection for each entry
 sql_thread = threading.Thread(target=sql_writer)
 sql_thread.daemon = True
@@ -260,7 +266,7 @@ while not STAHP:
 
     if bc_list:
         job = random.choice(bc_list)
-    else if a_list:
+    elif a_list:
         job = random.choice(a_list)
     else:
         print("Z")
@@ -275,6 +281,8 @@ while not STAHP:
         else:
             bc_list.remove(job)
     else:
+        if status == 1:   # Network things
+            sleep(10)
         print(status, job)
 
 # If we have unfinished jobs in jlist, that's pickled for later
@@ -284,7 +292,7 @@ if(jlist):
     with open(str("jlist.txt"), "wb") as fl:
         pickle.dump(jlist, fl)
 
-print('unwritten results in rlist', len(rlist))
+print('unwritten results in r_list', len(r_list))
 
 server.shutdown()
 server.server_close()
