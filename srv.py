@@ -13,6 +13,12 @@ from lxml import html
 import ff1
 import sqlite3
 
+global a_list, bc_list, r_list
+a_list, bc_list, r_list = [], [], []
+HOST, PORT = "localhost", 9500
+global STAHP
+STAHP = False
+
 
 def sql_writer():
     with sqlite3.connect('test.db') as conn:
@@ -74,7 +80,6 @@ def do_a(job):
 
     if result[1] == 'AUTOTRADER_FAILED':
         print("Server failed")
-        time.sleep(60)
         return 1
 
     r_list.append(result)
@@ -107,7 +112,6 @@ def do_b(job):
 def do_c(job):
     page = requests.get(job[1] + "1")
     if page.status_code == 204:  # Network stuff
-        time.sleep(120)
         return 1
 
     t = html.fromstring(page.content)
@@ -150,6 +154,20 @@ def updater():
         a_list.append(['a', i])
 
     return len(to_add)
+
+
+def pruner():
+    counter = 0
+    with sqlite3.connect('test.db') as conn:
+        c = conn.cursor()
+        c.execute('SELECT url FROM cars WHERE make IS NOT NULL')
+        alist = c.fetchall()
+    from_database = [item for sublist in alist for item in sublist]
+    for element in from_database:
+        if a_list.__contains__(element):
+            a_list.remove(element)
+            counter += 1
+    return counter
 
 
 def combine_lines(olds, newline):
@@ -208,20 +226,27 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
         data = self.request.recv(1024).decode('UTF-8')
         if(data == 'shutdown'):
+            global STAHP
             STAHP = True
             self.request.sendall(b'shutting down')
             while(self.request.recv(1024)):
                 pass
             return 0
-        if data == 'updater':
+        if data == 'update':
             print('U ' + str(updater()))
             self.request.sendall(b'updatr')
             while(self.request.recv(1024)):
                 pass
             return 0
+        if data == 'prune':
+            print('P ' + str(pruner()))
+            self.request.sendall(b'pruned')
+            while(self.request.recv(1024)):
+                pass
+            return 0
         job = jparse(data)
         if job:
-            if job[0] == a:
+            if job[0] == 'a':
                 a_list.append(job)
             else:
                 bc_list.append(job)
@@ -236,11 +261,6 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
-
-global a_list, bc_list, r_list
-a_list, bc_list, r_list = [], [], []
-HOST, PORT = "localhost", 9500
-STAHP = False   # How the main loop knows when to STAHP
 
 server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
 
@@ -287,10 +307,10 @@ while not STAHP:
 
 # If we have unfinished jobs in jlist, that's pickled for later
 # surely SOMEONE should import them at startup then
-if(jlist):
-    print('unfinished jobs in jlist', len(jlist))
-    with open(str("jlist.txt"), "wb") as fl:
-        pickle.dump(jlist, fl)
+if(a_list):
+    print('unfinished jobs in a_list', len(a_list))
+    with open(str("alist.txt"), "wb") as fl:
+        pickle.dump(a_list, fl)
 
 print('unwritten results in r_list', len(r_list))
 

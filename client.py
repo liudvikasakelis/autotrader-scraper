@@ -36,7 +36,11 @@ def multiple_queries(postcode, radius, price_from, price_to):
 
 
 def update():
-    client('localhost', 9500, 'updater')
+    client('localhost', 9500, 'update')
+
+
+def prune():
+    client('localhost', 9500, 'prune')
 
 
 def shutdown():
