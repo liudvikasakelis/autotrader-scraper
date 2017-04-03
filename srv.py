@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+""" going to add separate work lists"""
 
 import socket
 import threading
@@ -58,6 +59,42 @@ def sql_writer():
             time.sleep(5)
 
 
+def do_a(job):
+    result = ff1.scraper(job[1])
+
+    if result[1] == 'AUTOTRADER_FAILED':
+        print("Server failed")
+        time.sleep(60)
+        return 1
+
+    rlist.append(result)
+    print("A")
+    return 0
+
+
+def do_b(job):
+    count = 0
+    page = requests.get(job[1])
+
+    if page.status_code == 204:  # Network stuff
+        time.sleep(120)
+        return 1
+
+    t = html.fromstring(page.content)
+    v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
+
+    for a in v:
+        ID = re.search('(?<=classified/advert/)[0-9]+', a)
+        if ID:
+            ID = int(ID.group(0))
+            jlist.append(("a", ID))  # b jobs produce a jobs
+            rlist.append([ID] + [None] * 17 + [int(time.time())] + [None])
+            count += 1
+
+    print("B " + str(count))
+    return 0
+
+
 def do_c(job):
     page = requests.get(job[1] + "1")
     if page.status_code == 204:  # Network stuff
@@ -105,42 +142,6 @@ def updater():
         jlist.append(['a', i])
 
     return len(to_add)
-
-
-def do_b(job):
-    count = 0
-    page = requests.get(job[1])
-
-    if page.status_code == 204:  # Network stuff
-        time.sleep(120)
-        return 1
-
-    t = html.fromstring(page.content)
-    v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-
-    for a in v:
-        ID = re.search('(?<=classified/advert/)[0-9]+', a)
-        if ID:
-            ID = int(ID.group(0))
-            jlist.append(("a", ID))  # b jobs produce a jobs
-            rlist.append([ID] + [None] * 17 + [int(time.time())] + [None])
-            count += 1
-
-    print("B " + str(count))
-    return 0
-
-
-def do_a(job):
-    result = ff1.scraper(job[1])
-
-    if result[1] == 'AUTOTRADER_FAILED':
-        print("Server failed")
-        time.sleep(60)
-        return 1
-
-    rlist.append(result)
-    print("A")
-    return 0
 
 
 def combine_lines(olds, newline):
@@ -280,7 +281,7 @@ if(jlist):
     with open(str("jlist.txt"), "wb") as fl:
         pickle.dump(jlist, fl)
 
-print(len(rlist))
+print('unwritten results in rlist', len(rlist))
 
 server.shutdown()
 server.server_close()
