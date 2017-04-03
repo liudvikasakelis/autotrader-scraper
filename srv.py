@@ -130,6 +130,19 @@ def do_c(job):
     return 0
 
 
+def add_from_database():
+    counter = 0
+    with sqlite3.connect('test.db') as conn:
+        c = conn.cursor()
+        c.execute('SELECT url FROM cars WHERE make IS NULL')
+        alist = c.fetchall()
+    from_database = [item for sublist in alist for item in sublist]
+    for element in from_database:
+        a_list.append(['a', element])
+        counter += 1
+    return counter
+
+
 def updater():
     with sqlite3.connect('test.db') as conn:
         c = conn.cursor()
@@ -241,6 +254,12 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         if data == 'prune':
             print('P ' + str(pruner()))
             self.request.sendall(b'pruned')
+            while(self.request.recv(1024)):
+                pass
+            return 0
+        if data == 'afd':
+            print('P ' + str(add_from_database()))
+            self.request.sendall(b'afdd')
             while(self.request.recv(1024)):
                 pass
             return 0
