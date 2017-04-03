@@ -232,8 +232,8 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 
-jlist = []      # Job list
-rlist = []      # Result list
+global a_list, bc_list, r_list
+a_list, bc_list, r_list = [], [], []
 HOST, PORT = "localhost", 9500
 STAHP = False   # How the main loop knows when to STAHP
 
@@ -258,21 +258,25 @@ sql_thread.start()
 # Pay attention, this is the MAIN LOOP:
 while not STAHP:
     time.sleep(random.gammavariate(.1, 1))
-    if(jlist):
-        job = random.choice(jlist)
-        if(job[0] == "a"):
-            status = do_a(job)
-        elif(job[0] == "b"):
-            status = do_b(job)
-        elif(job[0] == "c"):
-            status = do_c(job)
 
-        if(status == 0):
-            jlist.remove(job)
+    if bc_list:
+        job = random.choice(bc_list)
+    else if a_list:
+        job = random.choice(a_list)
+    else:
+        print("Z")
+        time.sleep(10)
+        continue
+
+    status = do_job(job)
+
+    if status == 0:
+        if job[0] == 'a':
+            a_list.remove(job)
         else:
-            print("job failed:")
-            print(job)
-            print("status: " + str(status))
+            bc_list.remove(job)
+    else:
+        print(status, job)
 
 # If we have unfinished jobs in jlist, that's pickled for later
 # surely SOMEONE should import them at startup then
