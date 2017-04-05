@@ -45,3 +45,7 @@ def prune():
 
 def shutdown():
     client('localhost', 9500, 'shutdown')
+
+
+def afd():
+    client('localhost', 9500, 'afd')

@@ -116,9 +116,7 @@ def do_c(job):
 
     t = html.fromstring(page.content)
     t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-    t_cars = t.xpath(
-        '//h1[@class="search-form__count js-results-count"]/text()'
-    )[0]
+    t_cars = t.xpath('//h1[@class="search-form__count js-results-count"]/text()')[0]
     t_cars = re.search('[0-9,]+', t_cars).group(0)
     t_cars = int(t_cars.replace(",", ""))
     pageno = t_cars // 10 + 1
@@ -134,7 +132,7 @@ def add_from_database():
     counter = 0
     with sqlite3.connect('test.db') as conn:
         c = conn.cursor()
-        c.execute('SELECT url FROM cars WHERE make IS NULL')
+        c.execute('SELECT url FROM cars WHERE make IS NULL AND first_gone IS NULL')
         alist = c.fetchall()
     from_database = [item for sublist in alist for item in sublist]
     for element in from_database:
@@ -263,6 +261,14 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             while(self.request.recv(1024)):
                 pass
             return 0
+        if data == 'status':
+            resp = ('r_list ' + str(len(r_list)) +
+                    ' a_list ' + str(len(a_list)) +
+                    ' bc_list ' + str(len(bc_list)))
+            self.request.sendall(resp.encode('utf-8'))
+            while(self.request.recv(1024)):
+                pass
+            return 0
         job = jparse(data)
         if job:
             if job[0] == 'a':
@@ -321,7 +327,7 @@ while not STAHP:
             bc_list.remove(job)
     else:
         if status == 1:   # Network things
-            sleep(10)
+            time.sleep(10)
         print(status, job)
 
 # If we have unfinished jobs in jlist, that's pickled for later
