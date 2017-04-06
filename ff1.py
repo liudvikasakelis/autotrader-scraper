@@ -72,8 +72,11 @@ def scraper(urlid):
     else:
         cat = None
 
-    nl[1] = re.search('(?<=make=).*(?=&)', v).group(0)  # make
-    nl[2] = re.search('(?<=model=).*', v).group(0)  # model
+    if re.search('(?<=make=).*(?=&)', v):
+        nl[1] = re.search('(?<=make=).*(?=&)', v).group(0)  # make
+
+    if re.search('(?<=model=).*', v):
+        nl[2] = re.search('(?<=model=).*', v).group(0)  # model
 
     try:
         nl[3] = lpat(p, '[0-9]+.[0-9]+L')[:-1]  # engine size in L
