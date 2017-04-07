@@ -16,22 +16,31 @@ def client(HOST, PORT, message):
     sock.close()
 
 
-def add_query(postcode, radius, price_from, price_to):
-    url = (
-        'http://www.autotrader.co.uk/car-search?postcode={postcode}&radius='
-        '{radius}&price-from={price_from}&price-to={price_to}&page='.format(
-            postcode=postcode,
-            radius=radius,
-            price_from=price_from,
-            price_to=price_to
-        )
-    )
+def add_query(price_from=0,
+              price_to=100000,
+              postcode='sy12dj',
+              radius=200,
+              make=None):
+    url = 'http://www.autotrader.co.uk/car-search?'
+    if postcode:
+        url += 'postcode=' + postcode + '&'
+    if radius:
+        url += 'radius=' + str(radius) + '&'
+    if price_from:
+        url += 'price-from=' + str(price_from) + '&'
+    if price_to:
+        url += 'price-to=' + str(price_to) + '&'
+    if make:
+        url += 'make=' + str(make) + '&'
+    url += '&page='
     client('localhost', 9500, 'c' + url)
 
 
-def multiple_queries(postcode, radius, price_from, price_to):
+def multiple_queries(price_from=0, price_to=100000, **kwargs):
     while price_from < price_to:
-        add_query(postcode, radius, price_from, price_from + 500)
+        add_query(price_from=price_from,
+                  price_to=price_from + 500,
+                  **kwargs)
         price_from = price_from + 500
 
 
@@ -49,3 +58,7 @@ def shutdown():
 
 def afd():
     client('localhost', 9500, 'afd')
+
+
+def status():
+    client('localhost', 9500, 'status')

@@ -12,16 +12,19 @@ import re
 from lxml import html
 import ff1
 import sqlite3
+import sys
 
 global a_list, bc_list, r_list
 a_list, bc_list, r_list = [], [], []
 HOST, PORT = "localhost", 9500
 global STAHP
 STAHP = False
+global db_filename
+db_filename = sys.argv[1]
 
 
 def sql_writer():
-    with sqlite3.connect('test.db') as conn:
+    with sqlite3.connect(db_filename) as conn:
         c = conn.cursor()
         c.execute('CREATE TABLE IF NOT EXISTS cars ('
                   'url INTEGER PRIMARY KEY,'
@@ -130,7 +133,7 @@ def do_c(job):
 
 def add_from_database():
     counter = 0
-    with sqlite3.connect('test.db') as conn:
+    with sqlite3.connect(db_filename) as conn:
         c = conn.cursor()
         c.execute('SELECT url FROM cars WHERE make IS NULL AND first_gone IS NULL')
         alist = c.fetchall()
@@ -142,7 +145,7 @@ def add_from_database():
 
 
 def updater():
-    with sqlite3.connect('test.db') as conn:
+    with sqlite3.connect(db_filename) as conn:
         c = conn.cursor()
         now = int(time.time())
         cutoff = now - 60 * 60 * 24
@@ -169,7 +172,7 @@ def updater():
 
 def pruner():
     counter = 0
-    with sqlite3.connect('test.db') as conn:
+    with sqlite3.connect(db_filename) as conn:
         c = conn.cursor()
         c.execute('SELECT url FROM cars WHERE make IS NOT NULL')
         alist = c.fetchall()
