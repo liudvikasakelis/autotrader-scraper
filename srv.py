@@ -23,6 +23,32 @@ global db_filename
 db_filename = sys.argv[1]
 
 
+def do_command(cmd):
+    if cmd == 'shutdown':
+        global STAHP
+        STAHP = True
+        return 'server shuts down'
+    if cmd == 'update':
+        return updater()
+    if cmd == 'afd':
+        return add_from_database()
+    if cmd == 'a_status':
+        return len(a_list)
+    if cmd == 'bc_status':
+        return len(bc_list)
+    if cmd == 'r_status':
+        return len(r_list)
+    if cmd == 'a_flush':
+        q = len(a_list)
+        a_list.clear()
+        return q
+    if cmd == 'bc_flush':
+        q = len(bc_list)
+        bc_list.clear()
+        return q
+    return -1
+
+
 def sql_writer():
     with sqlite3.connect(db_filename) as conn:
         c = conn.cursor()
@@ -170,20 +196,6 @@ def updater():
     return len(to_add)
 
 
-def pruner():
-    counter = 0
-    with sqlite3.connect(db_filename) as conn:
-        c = conn.cursor()
-        c.execute('SELECT url FROM cars WHERE make IS NOT NULL')
-        alist = c.fetchall()
-    from_database = [item for sublist in alist for item in sublist]
-    for element in from_database:
-        if a_list.__contains__(element):
-            a_list.remove(element)
-            counter += 1
-    return counter
-
-
 def combine_lines(olds, newline):
     """This combines lines (one line in newline, multiple in olds)"""
     final = newline
@@ -217,6 +229,8 @@ def my_max(one, two):
 
 
 def jparse(data):
+    if data[1:8] != 'http://':
+        return 0
     if(data[0] == "a"):
         ret = [None] * 2
         ret[0] = "a"
@@ -239,36 +253,9 @@ def jparse(data):
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
         data = self.request.recv(1024).decode('UTF-8')
-        if(data == 'shutdown'):
-            global STAHP
-            STAHP = True
-            self.request.sendall(b'shutting down')
-            while(self.request.recv(1024)):
-                pass
-            return 0
-        if data == 'update':
-            print('U ' + str(updater()))
-            self.request.sendall(b'updatr')
-            while(self.request.recv(1024)):
-                pass
-            return 0
-        if data == 'prune':
-            print('P ' + str(pruner()))
-            self.request.sendall(b'pruned')
-            while(self.request.recv(1024)):
-                pass
-            return 0
-        if data == 'afd':
-            print('P ' + str(add_from_database()))
-            self.request.sendall(b'afdd')
-            while(self.request.recv(1024)):
-                pass
-            return 0
-        if data == 'status':
-            resp = ('r_list ' + str(len(r_list)) +
-                    ' a_list ' + str(len(a_list)) +
-                    ' bc_list ' + str(len(bc_list)))
-            self.request.sendall(resp.encode('utf-8'))
+        ret = do_command(data)
+        if ret != -1:
+            self.request.sendall(str(ret).encode())
             while(self.request.recv(1024)):
                 pass
             return 0
@@ -325,9 +312,15 @@ while not STAHP:
 
     if status == 0:
         if job[0] == 'a':
-            a_list.remove(job)
+            try:
+                a_list.remove(job)
+            except ValueError:
+                pass
         else:
-            bc_list.remove(job)
+            try:
+                bc_list.remove(job)
+            except ValueError:
+                pass
     else:
         if status == 1:   # Network things
             time.sleep(10)

@@ -11,9 +11,9 @@ def client(HOST, PORT, message):
     message = bytes(str(message), 'UTF-8')
     sock.sendall(message)
     reply = sock.recv(1024)
-    print("server says: " + reply.decode('UTF-8'))
     sock.shutdown(0)
     sock.close()
+    return reply.decode('UTF-8')
 
 
 def add_query(price_from=0,

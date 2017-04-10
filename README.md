@@ -1,9 +1,8 @@
 # autotrader-scraper
+## autotrader search page format has changed, so scraper function needs updating 
 Autotrader.co.uk data scraper.
 
-Exports to a sqlite3 database and keeps it really tidy.
-
-Just moved to python3, so bugs should be expected. More documentation on the way
+Exports to a sqlite3 database and keeps it really tidy. More documentation on the way.
 
 # Structure
 
