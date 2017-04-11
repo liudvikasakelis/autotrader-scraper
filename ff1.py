@@ -23,7 +23,6 @@ def lpat(q, pattern):
 
 # FIXME: This method is way too long.
 def scraper(urlid):
-
     fuelTypes = ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'Bi Fuel']
     bodyTypes = ['MPV', 'Convertible', 'SUV', 'Estate', 'Coupe', 'Saloon',
                  'Hatchback']
@@ -139,3 +138,22 @@ def scraper(urlid):
     nl[18] = int(time.time())
 
     return nl
+
+
+def b_scraper(url):
+    rtn = []
+    page = requests.get(url)
+    if page.status_code == 204:
+        return -1
+    tree = html.fromstring(page.content)
+    rtn = list(map(int, tree.xpath('//li[@class="search-page__result"]/@id')))
+    return rtn
+
+
+def c_scraper(url):
+    page = requests.get(url)
+    if page.status_code == 204:
+        return -1
+    tree = html.fromstring(page.content)
+    page_number = int(tree.xpath('//li[@class="paginationMini__count"]/strong[2]/text()')[0])
+    return page_number
