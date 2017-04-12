@@ -118,41 +118,23 @@ def do_a(job):
 
 def do_b(job):
     count = 0
-    page = requests.get(job[1])
-
-    if page.status_code == 204:  # Network stuff
+    car_ids = ff1.b_scraper(job[1])
+    if car_ids == -1:
         return 1
-
-    t = html.fromstring(page.content)
-    v = t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-
-    for a in v:
-        ID = re.search('(?<=classified/advert/)[0-9]+', a)
-        if ID:
-            ID = int(ID.group(0))
-            a_list.append(("a", ID))  # b jobs produce a jobs
-            r_list.append([ID] + [None] * 17 + [int(time.time())] + [None])
-            count += 1
-
+    for ID in car_ids:
+        a_list.append(("a", ID))  # b jobs produce a jobs
+        r_list.append([ID] + [None] * 17 + [int(time.time())] + [None])
+        count += 1
     print("B " + str(count))
     return 0
 
 
 def do_c(job):
-    page = requests.get(job[1] + "1")
-    if page.status_code == 204:  # Network stuff
+    pageno = ff1.c_scraper(job[1] + '1')
+    if pageno == -1:
         return 1
-
-    t = html.fromstring(page.content)
-    t.xpath('//div[@class="search-result__r1"]/div/a/@href')
-    t_cars = t.xpath('//h1[@class="search-form__count js-results-count"]/text()')[0]
-    t_cars = re.search('[0-9,]+', t_cars).group(0)
-    t_cars = int(t_cars.replace(",", ""))
-    pageno = t_cars // 10 + 1
-
     for i in range(pageno):
         bc_list.append(("b", job[1] + str(i + 1)))  # c jobs produce b jobs
-
     print("C " + str(pageno))
     return 0
 
