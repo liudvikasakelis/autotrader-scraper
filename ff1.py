@@ -146,7 +146,13 @@ def b_scraper(url):
     if page.status_code == 204:
         return -1
     tree = html.fromstring(page.content)
-    rtn = list(map(int, tree.xpath('//li[@class="search-page__result"]/@id')))
+    id_strings = tree.xpath('//li[@class="search-page__result"]/@id')
+    for element in id_strings:
+        try:
+            ele_int = int(element)
+            rtn.append(ele_int)
+        except ValueError:
+            pass
     return rtn
 
 
