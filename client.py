@@ -3,7 +3,7 @@
 import socket
 
 
-def client(HOST, PORT, message):
+def client(message, HOST='localhost', PORT=9500):
     if not message:
         raise ValueError('message of length 0')
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,7 +20,8 @@ def add_query(price_from=0,
               price_to=100000,
               postcode='sy12dj',
               radius=200,
-              make=None):
+              make=None,
+              **kwargs):
     url = 'http://www.autotrader.co.uk/car-search?'
     if postcode:
         url += 'postcode=' + postcode + '&'
@@ -33,7 +34,7 @@ def add_query(price_from=0,
     if make:
         url += 'make=' + str(make) + '&'
     url += '&page='
-    client('localhost', 9500, 'c' + url)
+    client('c' + url, **kwargs)
 
 
 def multiple_queries(price_from=0, price_to=100000, **kwargs):
@@ -44,21 +45,17 @@ def multiple_queries(price_from=0, price_to=100000, **kwargs):
         price_from = price_from + 500
 
 
-def update():
-    client('localhost', 9500, 'update')
+def update(**kwargs):
+    client('update', **kwargs)
 
 
-def prune():
-    client('localhost', 9500, 'prune')
+def prune(**kwargs):
+    client('prune', **kwargs)
 
 
-def shutdown():
-    client('localhost', 9500, 'shutdown')
+def shutdown(**kwargs):
+    client('shutdown', **kwargs)
 
 
-def afd():
-    client('localhost', 9500, 'afd')
-
-
-def status():
-    client('localhost', 9500, 'status')
+def afd(**kwargs):
+    client('afd', **kwargs)
