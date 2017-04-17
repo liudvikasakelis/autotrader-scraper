@@ -69,7 +69,7 @@ def scraper(urlid):
     if re.search('(?<=category=)\w', cat):
         cat = re.search('(?<=category=)\w', cat).group(0)
     else:
-        cat = None
+        cat = '0'
 
     if re.search('(?<=make=).*(?=&)', v):
         nl[1] = re.search('(?<=make=).*(?=&)', v).group(0)  # make
@@ -140,12 +140,21 @@ def scraper(urlid):
     return nl
 
 
-def b_scraper(url):
-    rtn = []
-    page = requests.get(url)
+def tree_getter(url):
+    try:
+        page = requests.get(url)
+    except requests.exceptions.RequestException:
+        return -2
     if page.status_code == 204:
         return -1
-    tree = html.fromstring(page.content)
+    return html.fromstring(page.content)
+
+
+def b_scraper(url):
+    tree = tree_getter(url)
+    if isinstance(tree, int):
+        return tree
+    rtn = []
     id_strings = tree.xpath('//li[@class="search-page__result"]/@id')
     for element in id_strings:
         try:
@@ -157,9 +166,11 @@ def b_scraper(url):
 
 
 def c_scraper(url):
-    page = requests.get(url)
-    if page.status_code == 204:
-        return -1
-    tree = html.fromstring(page.content)
-    page_number = int(tree.xpath('//li[@class="paginationMini__count"]/strong[2]/text()')[0])
+    tree = tree_getter(url)
+    if isinstance(tree, int):
+        return tree
+    try:
+        page_number = int(tree.xpath('//li[@class="paginationMini__count"]/strong[2]/text()')[0])
+    except IndexError:
+        return 0
     return page_number
