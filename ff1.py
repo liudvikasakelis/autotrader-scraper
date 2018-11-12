@@ -5,6 +5,7 @@ import re
 import requests
 from lxml import html
 import time
+import math
 
 
 def fipa(q, param):
@@ -47,16 +48,19 @@ def scraper(urlid):
 
     tree = html.fromstring(page.content)
 
-    if not re.search('Practicality', page.content.decode('UTF-8')):  # ad gone
-        nl[19] = int(time.time())  # first_gone field
-        return nl
+    # if not re.search('Practicality', page.content.decode('UTF-8')):  # ad gone
+    #     nl[19] = int(time.time())  # first_gone field
+    #     return nl
 
     # ???
-    v = tree.xpath('//link[@rel="canonical"]/@href')[0]
+    v = tree.xpath('//a[@class="tracking-standard-link"]/@href')[0]
+    print(v)
     # kfacts
     p = tree.xpath('//ul[@class="fpaGallery__sidebar__keyFacts"]/li/text()')
+    print('p', p)
     # specs
     q = tree.xpath('//div[@class="fpaSpecifications__listItem"]/div/text()')
+    print(q)
     # utag_data
     z = tree.xpath('//script[contains(.,"vehicle_price")]/text()')
     # full desc
@@ -71,8 +75,10 @@ def scraper(urlid):
     else:
         cat = '0'
 
-    if re.search('(?<=make=).*(?=&)', v):
-        nl[1] = re.search('(?<=make=).*(?=&)', v).group(0)  # make
+    if re.search('(?<=Make=).*(?=&)', v):
+        nl[1] = re.search('(?<=Make=).*(?=&)', v).group(0)  # make
+    
+    
 
     if re.search('(?<=model=).*', v):
         nl[2] = re.search('(?<=model=).*', v).group(0)  # model
@@ -83,7 +89,14 @@ def scraper(urlid):
         nl[3] = -1
 
     try:
-        nl[4] = int(lpat(p, '[0-9]{4}'))  # year
+        nl[4] = int(
+            re.sub(
+                '[^0-9]',
+                '',
+                lpat(p, '[0-9]{4}')
+            )
+        )
+        
     except TypeError:
         nl[4] = -1
 
@@ -114,7 +127,14 @@ def scraper(urlid):
         nl[9] = -1
 
     try:
-        nl[10] = int(fipa(q, "No. of doors"))  # doors
+        print(lpat(p, 'doors'))
+        nl[10] = int(
+            re.sub(
+                '[^0-9]',
+                '',
+                lpat(p, "doors")
+            )
+        )
     except ValueError:
         nl[10] = -1
 
@@ -147,6 +167,7 @@ def tree_getter(url):
         return -2
     if page.status_code == 204:
         return -1
+    # print(page.content[:200])
     return html.fromstring(page.content)
 
 
@@ -170,7 +191,17 @@ def c_scraper(url):
     if isinstance(tree, int):
         return tree
     try:
-        page_number = int(tree.xpath('//li[@class="paginationMini__count"]/strong[2]/text()')[0])
+        print()
+        car_count = int(
+            re.sub(
+                '[^0-9]', 
+                '', 
+                tree.xpath('//h1[@class="search-form__count js-results-count"]/text()')[0]
+            )
+        )
+        page_count = int(math.ceil(car_count / 10))
+        print(page_count)
     except IndexError:
+        print('IndexError')
         return 0
-    return page_number
+    return page_count
