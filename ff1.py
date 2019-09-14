@@ -1,163 +1,80 @@
 #!/usr/bin/python3
-# works, but could use some cleanup (scraper function esp)
 
 import re
 import requests
 from lxml import html
 import time
 import math
+import json
 
 
-def fipa(q, param):
-    """matches param to list entries, returns next entry after match"""
-    for a in range(len(q)):
-        if q[a] == param:
-            return q[a + 1]
-
-
-def lpat(q, pattern):
-    """sees if list element matches regex, returns element"""
-    for a in q:
-        if re.match(pattern, a):
-            return a
-
-
-# FIXME: This method is way too long.
-def scraper(urlid):
-    fuelTypes = ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'Bi Fuel']
-    bodyTypes = ['MPV', 'Convertible', 'SUV', 'Estate', 'Coupe', 'Saloon',
-                 'Hatchback']
-    trnsTypes = ['Manual', 'Automatic', 'Semi-Automatic']
-    nl = [None] * 20
-
-    nl[0] = urlid
-
-    aurl = 'http://www.autotrader.co.uk/classified/advert/'
-    params = ''
-
-    try:
-        page = requests.get(aurl + str(urlid) + params)
-    except Exception:
-        # FIXME: No exception defined
-        nl[1] = "AUTOTRADER_FAILED"
-        return nl
-
-    if page.status_code == 204:
-        nl[1] = "AUTOTRADER_FAILED"
-        return nl
-
-    tree = html.fromstring(page.content)
-
-    # if not re.search('Practicality', page.content.decode('UTF-8')):  # ad gone
-    #     nl[19] = int(time.time())  # first_gone field
-    #     return nl
-
-    # ???
-    v = tree.xpath('//a[@class="tracking-standard-link"]/@href')[0]
-    print(v)
-    # kfacts
-    p = tree.xpath('//ul[@class="fpaGallery__sidebar__keyFacts"]/li/text()')
-    print('p', p)
-    # specs
-    q = tree.xpath('//div[@class="fpaSpecifications__listItem"]/div/text()')
-    print(q)
-    # utag_data
-    z = tree.xpath('//script[contains(.,"vehicle_price")]/text()')
-    # full desc
-    desc = tree.xpath('//section[@class="fpaDescription"]/text()')[0]
-    # just the good bits
-    z = re.search('(?<=utag_data = {).*(?=})', z[0]).group(0)
-    cat = tree.xpath('//a[@class="tracking-motoring-products-link"]/@href')[0]
-
-    # TODO: Is it everything fine with backslash(\) in strings?
-    if re.search('(?<=category=)\w', cat):
-        cat = re.search('(?<=category=)\w', cat).group(0)
-    else:
-        cat = '0'
-
-    if re.search('(?<=Make=).*(?=&)', v):
-        nl[1] = re.search('(?<=Make=).*(?=&)', v).group(0)  # make
+def scraper(url):
+    urlid = re.findall('[0-9]{11,}', url)[0]
+    base_url = 'https://www.autotrader.co.uk/json/fpa/initial/'
+    response = requests.get(base_url + str(urlid), timeout=5)
     
+    ret = dict()
     
-
-    if re.search('(?<=model=).*', v):
-        nl[2] = re.search('(?<=model=).*', v).group(0)  # model
-
-    try:
-        nl[3] = lpat(p, '[0-9]+.[0-9]+L')[:-1]  # engine size in L
-    except TypeError:
-        nl[3] = -1
-
-    try:
-        nl[4] = int(
-            re.sub(
-                '[^0-9]',
-                '',
-                lpat(p, '[0-9]{4}')
-            )
-        )
+    ret['url'] = url
+    ret['status_code'] = response.status_code
+    if response.status_code != 200:
+        return ret
+    
+    ret['raw_response'] = response.content.decode('utf-8')
+    
+    d = json.loads(response.content.decode('utf-8'))
+    
+    keys_vehicle = {'make', 'model', 'trim', 'condition', 'tax', 'co2Emissions'}
+    for nm in set(d['vehicle'].keys()).intersection(keys_vehicle):
+        ret[nm] = d['vehicle'][nm]
         
-    except TypeError:
-        nl[4] = -1
-
-    try:
-        nl[5] = list(set(bodyTypes).intersection(p))[0]  # body type
-    except IndexError:
-        nl[5] = -1
-
-    try:
-        nl[6] = lpat(p, '[0-9]+,[0-9]+ miles')[:-6]  # mileage in a string
-        nl[6] = int(nl[6].replace(",", ""))
-    except TypeError:
-        nl[6] = -1
-
-    try:
-        nl[7] = list(set(trnsTypes).intersection(p))[0]  # transmission
-    except IndexError:
-        nl[7] = -1
-
-    try:
-        nl[8] = list(set(fuelTypes).intersection(p))[0]  # fuel type
-    except IndexError:
-        nl[8] = -1
-
-    try:
-        nl[9] = int(fipa(q, " emissions")[:-4])  # co2 emissions
-    except ValueError:
-        nl[9] = -1
-
-    try:
-        print(lpat(p, 'doors'))
-        nl[10] = int(
-            re.sub(
-                '[^0-9]',
-                '',
-                lpat(p, "doors")
-            )
-        )
-    except ValueError:
-        nl[10] = -1
-
-    try:
-        nl[11] = int(fipa(q, "No. of seats"))  # seats
-    except ValueError:
-        nl[11] = -1
-
-    nl[12] = cat  # category
-
-    try:
-        nl[13] = int(fipa(q, "Engine power")[:-4])  # engine power, in bhp
-    except ValueError:
-        nl[13] = -1
-
-    nl[14] = fipa(q, "Drivetrain")  # drivetrain
-    nl[15] = re.search('(?<=vehicle_price":")[0-9]*', z).group(0)  # price
-    nl[16] = re.search('(?<=type":")\w+', z).group(0)
-    # nl[18] = re.search('(?<=postcode":")\w+', z).group(0) # postcode
-    nl[17] = desc
-    nl[18] = int(time.time())
-
-    return nl
+    keys_keyFacts = {
+        'engine-size', 'manufactured-year', 'body-type', 'mileage', 
+        'transmission', 'fuel-type', 'doors', 'seats'
+    }
+    for nm in set(d['vehicle']['keyFacts'].keys()).intersection(keys_keyFacts):
+        ret[nm] = d['vehicle']['keyFacts'][nm]
+        
+    if 'doors' in ret.keys():
+        match = re.search('\d+', ret['doors'])
+        if match:
+            ret['doors'] = match[0]
+    
+    if 'seats' in ret.keys():
+        match = re.search('\d+', ret['seats'])
+        if match:
+            ret['seats'] = match[0]
+    
+    if 'manufactured-year' in ret.keys():
+        match = re.search('\d{4}', ret['manufactured-year'])
+        if match:
+            ret['manufactured-year'] = match[0]
+            
+    if 'mileage' in ret.keys():
+        ret['mileage'] = re.sub('[^\d\.]', '', ret['mileage'])
+    
+    if 'co2Emissions' in ret.keys():
+        ret['co2Emissions'] = re.sub('[^\d\.]', '', ret['co2Emissions'])
+    
+    
+    keys_advert = {'price', 'description'}
+    for nm in set(d['advert'].keys()).intersection(keys_advert):
+        ret[nm] = d['advert'][nm]
+        
+    if 'price' in ret.keys():
+        ret['price'] = re.sub('[^\d]', '', ret['price'])
+    
+    keys_seller = {'isTradeSeller', 'townAndDistance', 'emailAddress'}
+    for nm in set(d['seller'].keys()).intersection(keys_seller):
+        ret[nm] = d['seller'][nm]
+        
+    keys_tracking = {
+        'average_mpg', 'vehicle_check_status'
+    }
+    for nm in set(d['pageData']['tracking'].keys()).intersection(keys_seller):
+        ret[nm] = d['pageData']['tracking'][nm]
+        
+    return ret
 
 
 def tree_getter(url):
