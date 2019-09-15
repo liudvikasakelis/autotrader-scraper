@@ -41,6 +41,6 @@ The only real way to get around this is a proxy list, which flies right out of
 the territory of casual scraping. Feel free to implement one yourself if you 
 need the ads so badly. 
 
-* client.py DEPRECATED really, a simple listmaker ought to be enough for 
+* client.py **DEPRECATED** really, a simple listmaker ought to be enough for 
 everyone™
 
