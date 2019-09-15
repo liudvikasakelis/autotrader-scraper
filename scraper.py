@@ -4,40 +4,41 @@
 # outputting in .csv format. The scraper function itself can be found in ff1.py
 
 # Takes three arugments, in order: 
-# 1. an input file name (containing a pickled list of ad IDs)
-# 2. an output file name 
-# 3. an optional "a" to append to an existing output file
-# !!WILL OVERWRITE OTHERWISE, SO CAREFUL!!
+# 1. an input file name (one line per ad url)
+# 2. an output file name (appends by default)
+
 
 import sys
-
-import pickle
 import csv
+import os
 
 import ff1
     
-with open(str(sys.argv[1]), 'rb') as i_file: # our ID file
-    url_list = pickle.load(i_file) 
+with open(str(sys.argv[1]), 'r') as i_file: # url file 
+    url_list = i_file.readlines()
 
-if len(sys.argv) > 3: # append mode available by adding "a" after output file
-    if sys.argv[3] == "a": 
-        mode = 'ab'
+if os.path.isfile(sys.argv[2]):
+    mode = 'a'
 else:
-    mode = 'wb'
-
+    mode = 'w'
+    
 with open(str(sys.argv[2]), mode) as o_file: 
-    cwriter = csv.writer(o_file)
     i = 0
-    toprow = ['url', 'make', 'model', 'engine_size', 'year', 'body_type', 
-              'mileage','transmission', 'fuel', 'co2_emissions', 'doors', 
-              'seats', 'category', 'engine_power', 'drive_train', 'price', 
-              'seller', 'full_desc', 'last_seen', 'first_gone']
-    if mode == 'wb':
-        cwriter.writerow(toprow)
+    field_names = [
+        'url', 'status_code', 'make', 'model', 'trim', 'manufactured_year', 
+        'condition', 'transmission', 'body_type', 'doors', 
+        'engine_size', 'seats', 'fuel_type', 'description', 'price', 
+        'townAndDistance', 'isTradeSeller', 'emailAddress', 'tax', 
+        'co2Emissions', 'mileage', 'raw_response'
+    ]
+    cwriter = csv.DictWriter(o_file, fieldnames=field_names)
+    
+    if mode == 'w':
+        cwriter.writeheader()
     for u in url_list:
         cwriter.writerow(ff1.scraper(u))
         i+=1
         if i % 10 == 0:
-            print i
+            print(i)
 
-print 'done'
+print('done')

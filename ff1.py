@@ -24,7 +24,9 @@ def scraper(url):
     
     d = json.loads(response.content.decode('utf-8'))
     
-    keys_vehicle = {'make', 'model', 'trim', 'condition', 'tax', 'co2Emissions'}
+    keys_vehicle = {
+        'make', 'model', 'trim', 'condition', 'tax', 'co2Emissions'
+    }
     for nm in set(d['vehicle'].keys()).intersection(keys_vehicle):
         ret[nm] = d['vehicle'][nm]
         
@@ -74,6 +76,9 @@ def scraper(url):
     for nm in set(d['pageData']['tracking'].keys()).intersection(keys_seller):
         ret[nm] = d['pageData']['tracking'][nm]
         
+    for nm in ret.keys():
+        ret[re.sub('-', '_', nm)] = ret.pop(nm)
+                   
     return ret
 
 
