@@ -93,20 +93,13 @@ def tree_getter(url):
     return html.fromstring(page.content)
 
 
-def b_scraper(url):
-    tree = tree_getter(url)
-    if isinstance(tree, int):
-        return tree
-    rtn = []
-    id_strings = tree.xpath('//li[@class="search-page__result"]/@id')
-    for element in id_strings:
-        try:
-            ele_int = int(element)
-            rtn.append(ele_int)
-        except ValueError:
-            pass
-    return rtn
-
+def search_result_scraper(url):
+    response = requests.get(url, timeout=5)
+    tree = html.fromstring(response.content.decode('utf-8'))
+    res = set(tree.xpath('//a[contains(@class, "listing-fpa-link")]/@href'))
+    return(list(res))
+    
+    
 
 def c_scraper(url):
     tree = tree_getter(url)
