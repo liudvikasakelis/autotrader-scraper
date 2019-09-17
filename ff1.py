@@ -76,7 +76,7 @@ def scraper(url):
     for nm in set(d['pageData']['tracking'].keys()).intersection(keys_seller):
         ret[nm] = d['pageData']['tracking'][nm]
         
-    for nm in ret.keys():
+    for nm in list(ret.keys()):
         ret[re.sub('-', '_', nm)] = ret.pop(nm)
                    
     return ret

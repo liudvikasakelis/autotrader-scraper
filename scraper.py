@@ -36,7 +36,8 @@ with open(str(sys.argv[2]), mode) as o_file:
     if mode == 'w':
         cwriter.writeheader()
     for u in url_list:
-        cwriter.writerow(ff1.scraper(u))
+        tmp = ff1.scraper(u)
+        cwriter.writerow(tmp)
         i+=1
         if i % 10 == 0:
             print(i)
