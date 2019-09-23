@@ -30,8 +30,11 @@ Be sure to handle the possible exceptions if you choose to use them.
 * `scraper.py`  Scrapes a list of ad urls into a csv file, lacking only a 
 listmaker (to make said list).
 
-* `listmaker.py`  Makes list of car IDs by query - not done yet, but coming 
-very very soon.
+* `listmaker.py`  Makes list of car IDs by query - read the file for instructions, 
+it works, however, doesn't know when to stop. Stop it yourself after all the cars in
+the search results have been scraped (check by number of lines in the output file).
+Also keep in mind that autotrader only lets you access top 1000 results from a 
+search anyway.
 
 * `srv.py`  **DEPRECATED**, because it's a very hardcore way to do what I think should 
 be casual scraping. It didn't solve the problem it was meant to (time away 
