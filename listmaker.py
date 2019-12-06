@@ -13,7 +13,7 @@ base_url = sys.argv[1]
 out_fname = sys.argv[2]
 
 if not os.path.isfile(out_fname):
-    z = file.open(out_fname, 'w')
+    z = open(out_fname, 'w')
     z.close()
     
 page_count = 1 
@@ -25,6 +25,7 @@ while True:
                 fcon.write('https://www.autotrader.co.uk' + r)
                 fcon.write('\n')
         page_count += 1
+        print(page_count)
         print(len(results))
     else:
         break
